@@ -1,7 +1,7 @@
 import pandas as pd
 
-file_path = "testing2.csv"
-raw=pd.read_csv("testing2.csv")
+file_path = "file_name with extension"
+raw=pd.read_csv(file_path)
 # Load data
 data = pd.read_csv(file_path, skiprows=2)
 
