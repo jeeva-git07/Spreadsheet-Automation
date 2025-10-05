@@ -54,7 +54,7 @@ def csat_survey(summary):
     # Feedback Requested = Grand Total - Feedback Received
     summary["Feedback Requested"] = grnd["Grand Total"]
 
-    # ✅ Response % = Feedback Received / (Feedback Requested + Feedback Received)
+    # Response % = Feedback Received / (Feedback Requested + Feedback Received)
     denom = summary["Feedback Requested"] + summary["Feedback Received"]
     summary["Response %"] = (
         (summary["Feedback Received"] / denom.replace({0: pd.NA})) * 100
