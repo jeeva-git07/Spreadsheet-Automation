@@ -1,0 +1,146 @@
+Google Apps Script - CSAT Report Generator (Line-by-Line Explanation)
+-----------------------------------------------------------
+
+This script automates the creation of multiple pivot tables (Asia, China, America, and Europe)
+and generates a summary table beside each pivot in Google Sheets.
+
+-----------------------------------------------------------
+MAIN FUNCTION – runCSATReport()
+-----------------------------------------------------------
+
+function runCSATReport() {
+  ➡️ Main function that controls everything — it runs the full report.
+}
+
+const ss = SpreadsheetApp.getActiveSpreadsheet();
+  ➡️ Gets the active Google Spreadsheet.
+
+const dataSheet = ss.getSheetByName("Sheet1");
+  ➡️ Gets the data sheet named "Sheet1" (contains raw CSAT data).
+
+if (!dataSheet) {
+  SpreadsheetApp.getUi().alert("Error: Data sheet 'Sheet1' not found.");
+  return;
+}
+  ➡️ If "Sheet1" doesn’t exist, show an alert message and stop the script.
+
+let pivotSheet = ss.getSheetByName("Pivot Summary");
+if (!pivotSheet) pivotSheet = ss.insertSheet("Pivot Summary");
+pivotSheet.clear();
+  ➡️ Looks for a sheet named "Pivot Summary" (output). If not found, create it, then clear old data.
+
+const lr=dataSheet.getLastRow()
+const lc=dataSheet.getLastColumn()
+const sourceRange = dataSheet.getRange(3,1,lr-2,lc);
+  ➡️ Gets total rows/columns and selects data from row 3 (skipping headers).
+
+const keepTeams = ['Endpoint', 'Network Services', 'Server And Datacenter'];
+  ➡️ Filters only these three teams.
+
+const COL_TEAM = 9;
+const COL_SURVEY_RATING = 12;
+const COL_IT_CENTER = 14;
+  ➡️ Define which columns represent Team, Survey Rating, and IT Center.
+
+let nextStartRow = 1;
+  ➡️ Tracks where to place the next pivot table.
+
+--- Create Regional Reports (Asia, China, America, Europe) ---
+
+Each block calls createPivotAndSummary() with region-specific site codes.
+
+pivotSheet.autoResizeColumns(1, pivotSheet.getMaxColumns());
+  ➡️ Auto-fits all columns for better readability.
+
+-----------------------------------------------------------
+HELPER FUNCTION – createPivotAndSummary()
+-----------------------------------------------------------
+
+function createPivotAndSummary(...) {
+  ➡️ Builds a pivot table + summary table for a region.
+}
+
+--- 1. CREATE PIVOT TABLE ---
+
+const pivotTable = pivotSheet.getRange(startCellA1).createPivotTable(sourceRange);
+  ➡️ Creates the pivot table at a given cell.
+
+pivotTable.addRowGroup(colTeam);
+pivotTable.addColumnGroup(colSurveyRating);
+pivotTable.addPivotValue(colSurveyRating, SpreadsheetApp.PivotTableSummarizeFunction.COUNTA);
+  ➡️ Defines pivot layout:
+     - Rows = Team
+     - Columns = Survey Rating
+     - Values = Count of Survey Rating
+
+--- Apply Filters ---
+  ➡️ IT Center (region sites)
+  ➡️ Team (keepTeams only)
+
+SpreadsheetApp.flush();
+  ➡️ Ensures pivot renders before reading.
+
+const pivotRange = pivotSheet.getRange(startCellA1).getDataRegion();
+const pivotData = pivotRange.getValues();
+  ➡️ Gets pivot output data.
+
+--- 2. GENERATE SUMMARY TABLE ---
+
+headers = pivotData[1];
+  ➡️ Rating headers (e.g., 3,4,5,Null,Grand Total).
+
+Find ratingCols[] and grandTotalCol dynamically.
+  ➡️ Loops header row to identify numeric rating columns and 'Grand Total' column.
+
+bodyData = pivotData.slice(2, pivotData.length - 1);
+  ➡️ Main pivot data excluding header and grand total rows.
+
+summaryHeaders = ["SUM","Response %","Rating","Low Rating","Low Response","Feedback Requested","Feedback Received"];
+  ➡️ Columns for summary table.
+
+calculateWeightedAvg() helper function
+  ➡️ Calculates weighted average rating for each team.
+
+For each team row:
+  ➡️ feedbackReceived = sum of all numeric ratings
+  ➡️ sum = weighted total (rating × count)
+  ➡️ feedbackRequested = Grand Total
+  ➡️ responsePercent = feedbackReceived / feedbackRequested
+  ➡️ rating = weighted average
+
+Adds Grand Total row combining all teams.
+
+--- 3. WRITE SUMMARY TABLE TO SHEET ---
+
+finalSummaryData = [header + body + grand total]
+  ➡️ Combine all rows into one table.
+
+Places summary starting at column J (10), or further right if pivot is wide.
+
+Writes data beside pivot:
+  ➡️ pivotSheet.getRange(...).setValues(finalSummaryData);
+
+--- 4. APPLY FORMATTING ---
+
+- Pivot header styled blue with white bold text
+- Response % formatted as percentage
+- Rating formatted with 1 decimal
+- Integers for SUM, Feedback Requested, Feedback Received
+- Bold last row (Grand Total)
+
+return pivotRange.getLastRow();
+  ➡️ Returns row index so next region starts below.
+
+-----------------------------------------------------------
+SUMMARY
+-----------------------------------------------------------
+
+✅ This script:
+1. Builds pivot tables for each region (Asia, China, America, Europe).
+2. Filters teams and IT centers properly.
+3. Calculates response %, ratings, totals dynamically.
+4. Generates clean summary tables beside pivots.
+5. Formats the sheet neatly for readability.
+
+-----------------------------------------------------------
+End of Explanation
